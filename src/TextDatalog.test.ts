@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import TextDatalog from "./TextDatalog.ts";
 
 const metadata = {
-    mimetype: "text/x-datalog",
+    mimetype: "application/vnd.datalog",
     glyph: "🧠",
     extensions: [".dl", ".datalog"] as const,
 };
@@ -11,7 +11,7 @@ const metadata = {
 describe("TextDatalog — instantiation", () => {
     it("instantiates with metadata", () => {
         const h = new TextDatalog(metadata);
-        assert.equal(h.mimetype, "text/x-datalog");
+        assert.equal(h.mimetype, "application/vnd.datalog");
         assert.equal(h.glyph, "🧠");
     });
 });
