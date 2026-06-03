@@ -102,17 +102,19 @@ describe("TextDatalog — extract", () => {
 });
 
 describe("TextDatalog — framework integration", () => {
-    it("renders extracted hierarchy via format()", () => {
+    it("renders extracted hierarchy via format()", async () => {
         const h = new TextDatalog(metadata);
-        const out = h.symbolsRaw("answer(42).");
+        const out = await h.symbolsRaw("answer(42).");
         assert.ok(out.includes("function answer"));
     });
 
-    it("inherits jsonpath query against the symbol outline", async () => {
+    it("jsonpath dispatches against the deep-json ANTLR parse tree (issue #10)", async () => {
+        // Every ANTLR deep tree has a root with a `type` field — verify
+        // jsonpath reaches it via the deep-channel dispatch.
         const h = new TextDatalog(metadata);
-        const src = "edge(a, b). edge(b, c).";
-        const e = await h.query(src, "jsonpath", "$.edge");
-        assert.equal(e.length, 1);
+        const roots = await h.query("class Probe {}", "jsonpath", "$.type");
+        assert.equal(roots.length, 1);
+        assert.equal(typeof roots[0].matched, "string");
     });
 });
 
