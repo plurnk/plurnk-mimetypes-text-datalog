@@ -44,11 +44,34 @@ class TextDatalogVisitor extends withExtractor(datalogVisitor) {
         if (!name) return null;
         const arity = predicateArity(head);
         const key = `${name}/${arity}`;
-        if (this.#emittedPredicates.has(key)) return null;
-        this.#emittedPredicates.add(key);
-        const params = predicateTerms(head);
-        this.addSymbol("function", name, ctx, params);
+        if (!this.#emittedPredicates.has(key)) {
+            this.#emittedPredicates.add(key);
+            const params = predicateTerms(head);
+            this.addSymbol("function", name, ctx, params);
+        }
+        // A rule's body atoms reference the relations that define them (the head
+        // relation of some other clause / a fact). Each body atom is a `use`
+        // edge from this rule's head (SPEC §16) → the named relation. Scope the
+        // body walk under the head so every ref carries container = head name
+        // (the @> join key). The head literal itself is NOT emitted as a ref.
+        const body = clause.body?.();
+        if (body) this.gateContainer(name, body);
         return null;
+    };
+
+    // Reached ONLY through gateContainer(name, body) above — the head literal
+    // is a child of `clause`, not `body`, and no other override recurses into
+    // literals. So every literal here is a body atom. A predicate-symbol
+    // literal is a relation use; built-in comparisons (`X = Y`, `X != Y`) have
+    // no predicate_sym and emit nothing. ctx = the predicate_sym (referenced
+    // node) so positions point at the name, never the def's own head name.
+    visitLiteral = (ctx: any): null => {
+        const ps = ctx.predicate_sym?.();
+        if (ps) {
+            const name = predicateName(ctx);
+            if (name) this.addRef("use", name, ps);
+        }
+        return this.visitChildren(ctx) as null;
     };
 
     visitRetraction = (_ctx: any): null => null;
